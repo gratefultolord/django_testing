@@ -1,9 +1,8 @@
 import pytest
 from pytest_django.asserts import assertRedirects
+from django.urls import reverse
 
 from http import HTTPStatus
-
-from django.urls import reverse
 
 
 @pytest.mark.django_db

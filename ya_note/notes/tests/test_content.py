@@ -46,4 +46,7 @@ class TestContent(TestCase):
             with self.subTest(name=name):
                 url = reverse(name, args=args)
                 response = self.client.get(url)
-                self.assertIsInstance(response.context['form'], NoteForm)
+                try:
+                    self.assertIsInstance(response.context['form'], NoteForm)
+                except KeyError:
+                    self.fail(f'Формы не передаются на url: {url}')

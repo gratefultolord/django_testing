@@ -42,11 +42,6 @@ def comment(news, author):
 
 
 @pytest.fixture
-def pk_for_args(comment):
-    return comment.pk
-
-
-@pytest.fixture
 def all_news():
     News.objects.bulk_create(
         News(title=f'Новость {index}',

@@ -3,7 +3,6 @@ from http import HTTPStatus
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
-
 from pytils.translit import slugify
 
 from notes.forms import WARNING
@@ -32,16 +31,17 @@ class TestNoteCreation(TestCase):
     def test_anonymous_user_cant_create_note(self):
         self.client.logout()
         response = self.client.post(self.url, self.form_data)
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
         self.assertEqual(
             Note.objects.filter(title='Заголовок заметки').count(), 0)
 
     def test_authenticated_user_can_create_note(self):
         self.client.force_login(self.author)
+        before_create_count = Note.objects.count()
         response = self.client.post(self.url, data=self.form_data)
         self.assertRedirects(response, reverse('notes:success'))
-        notes_count = Note.objects.count()
-        self.assertEqual(notes_count, 1)
+        after_create_count = Note.objects.count()
+        self.assertEqual(after_create_count, before_create_count + 1)
         note = Note.objects.get()
         self.assertEqual(note.title, self.NOTE_TITLE)
         self.assertEqual(note.text, self.NOTE_TEXT)
@@ -57,13 +57,14 @@ class TestNoteCreation(TestCase):
         self.assertEqual(Note.objects.count(), 1)
 
     def test_empty_slug(self):
-        self.author_client.post(self.url, data=self.form_data)
+        before_create_pks = set(Note.objects.values_list('pk', flat=True))
         self.form_data.pop('slug')
-        Note.objects.get().delete()
         response = self.author_client.post(self.url, data=self.form_data)
+        after_create_pks = set(Note.objects.values_list('pk', flat=True))
+        new_pk = (after_create_pks - before_create_pks).pop()
         self.assertRedirects(response, reverse('notes:success'))
         self.assertEqual(Note.objects.count(), 1)
-        new_note = Note.objects.get()
+        new_note = Note.objects.get(pk=new_pk)
         expected_slug = slugify(self.form_data['title'])
         self.assertEqual(new_note.slug, expected_slug)
 
@@ -89,13 +90,13 @@ class TestNoteEditAndDelete(TestCase):
         cls.author_client.force_login(cls.author)
         cls.reader_client = Client()
         cls.reader_client.force_login(cls.reader)
-        cls.edit_url = reverse('notes:edit', args=[cls.note.slug])
-        cls.delete_url = reverse('notes:delete', args=[cls.note.slug])
+        cls.edit_url = reverse('notes:edit', args=(cls.note.slug,))
+        cls.delete_url = reverse('notes:delete', args=(cls.note.slug,))
 
     def test_user_can_delete_own_notes(self):
         response = self.author_client.post(self.delete_url)
         self.assertRedirects(response, reverse('notes:success'))
-        self.assertEqual(Note.objects.filter(title='Test Note').count(), 0)
+        self.assertEqual(Note.objects.count(), 0)
 
     def test_other_user_cant_delete_note(self):
         response = self.reader_client.post(self.delete_url)
@@ -105,7 +106,6 @@ class TestNoteEditAndDelete(TestCase):
     def test_author_can_edit_note(self):
         response = self.author_client.post(self.edit_url, self.form_data)
         self.assertRedirects(response, reverse('notes:success'))
-        self.note.refresh_from_db
         self.assertEqual(self.note.title, self.NOTE_TITLE)
         self.assertEqual(self.note.text, self.NOTE_TEXT)
         self.assertEqual(self.note.slug, self.SLUG)

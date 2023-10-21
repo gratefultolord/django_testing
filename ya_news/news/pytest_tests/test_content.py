@@ -9,7 +9,7 @@ from django.urls import reverse
 def test_news_count(author_client):
     url = reverse('news:home')
     response = author_client.get(url)
-    object_list = response.context['object_list']
+    object_list = response.context.get('object_list', None)
     news_count = len(object_list)
     assert news_count == settings.NEWS_COUNT_ON_HOME_PAGE
 
@@ -19,7 +19,7 @@ def test_news_count(author_client):
 def test_news_order(author_client):
     url = reverse('news:home')
     response = author_client.get(url)
-    object_list = response.context['object_list']
+    object_list = response.context.get('object_list', None)
     all_dates = [news.date for news in object_list]
     sorted_dates = sorted(all_dates, reverse=True)
     assert all_dates == sorted_dates
