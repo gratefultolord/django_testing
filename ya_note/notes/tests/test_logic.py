@@ -106,6 +106,7 @@ class TestNoteEditAndDelete(TestCase):
     def test_author_can_edit_note(self):
         response = self.author_client.post(self.edit_url, self.form_data)
         self.assertRedirects(response, reverse('notes:success'))
+        self.note.refresh_from_db()
         self.assertEqual(self.note.title, self.NOTE_TITLE)
         self.assertEqual(self.note.text, self.NOTE_TEXT)
         self.assertEqual(self.note.slug, self.SLUG)

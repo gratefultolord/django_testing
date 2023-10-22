@@ -33,7 +33,7 @@ def test_user_can_create_comment(author, author_client, news, form_data):
     try:
         assert comment.text == form_data['text']
     except KeyError:
-        print("Ошибка: Ключ 'text' отсутствует в словаре form_data")
+        pytest.fail('Ошибка: Ключ "text" отсутствует в словаре form_data')
     assert comment.news == news
     assert comment.author == author
 
